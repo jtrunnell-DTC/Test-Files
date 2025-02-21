@@ -74,7 +74,7 @@ Function Install-App {
         winget install -e --id $appId --silent --accept-package-agreements --accept-source-agreements
         Write-Log "Installed ${appId} successfully."
     } catch {
-        Write-Log "Failed to install ${appId}: $_"
+        Write-Log "Failed to install ${appId}: ${_}"
     }
 }
 
@@ -89,7 +89,7 @@ Function Remove-Bloatware {
     foreach ($app in $removeApps) {
         try {
             Get-AppxPackage -Name $app | Remove-AppxPackage
-            Write-Log "Removed $app successfully."
+            Write-Log "Removed ${app} successfully."
         } catch {
             Write-Log "Failed to remove ${app}: ${_}"
         }
@@ -111,7 +111,7 @@ try {
     Write-Log "Extracted zip file contents successfully."
     Remove-Item -Path $zipPath -Force
 } catch {
-    Write-Log "File download/extraction failed: $_"
+    Write-Log "File download/extraction failed: ${_}"
     exit 1
 }
 
@@ -120,7 +120,7 @@ try {
     Copy-Item -Path $bgInfoSource -Destination $bgInfoDest -Recurse -Force
     Write-Log "Copied BGInfo folder successfully."
 } catch {
-    Write-Log "Failed to copy BGInfo folder: $_"
+    Write-Log "Failed to copy BGInfo folder: ${_}"
     exit 1
 }
 
@@ -129,7 +129,7 @@ try {
     Move-Item -Path $shortcutSource -Destination "$startupFolder\config - Shortcut.lnk" -Force
     Write-Log "Moved shortcut successfully."
 } catch {
-    Write-Log "Failed to move shortcut: $_"
+    Write-Log "Failed to move shortcut: ${_}"
     exit 1
 }
 
@@ -141,7 +141,7 @@ Function Refresh-BGInfo {
         Start-Process -FilePath $bgInfoExecutable -ArgumentList "$bgInfoConfig /timer:0"
         Write-Log "BGInfo refreshed successfully."
     } catch {
-        Write-Log "Failed to refresh BGInfo: $_"
+        Write-Log "Failed to refresh BGInfo: ${_}"
     }
 }
 
