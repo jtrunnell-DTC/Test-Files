@@ -1,4 +1,5 @@
-# Define paths
+# Define Variables
+
 $logFile = "C:\Digacore\script-log.txt"
 $tempFolder = [System.IO.Path]::GetTempPath()
 $extractPath = "C:\Digacore"
@@ -10,7 +11,6 @@ $backgroundImage = "$bgInfoDest\DG_Custombackground.jpg"
 $zipUrl = "https://raw.githubusercontent.com/jtrunnell-DTC/Test-Files/main/Files.zip"
 $zipPath = "$tempFolder\files.zip"
 
-# List of apps to install
 $apps = @(
     "Google.Chrome",
     "Mozilla.Firefox",
@@ -18,7 +18,6 @@ $apps = @(
     "Microsoft.OneDrive"
 )
 
-# List of apps to remove (decrapify Windows)
 $removeApps = @(
     "Microsoft.Office.Desktop",
     "Microsoft.OfficeHub",
@@ -54,20 +53,13 @@ $removeApps = @(
     "Microsoft.ZuneVideo"
 )
 
-# Ensure the log directory exists
-if (-not (Test-Path -Path $logFile)) {
-    New-Item -ItemType File -Path $logFile -Force | Out-Null
-}
+# Functions
 
-# Logging function
 Function Write-Log {
     param ([string]$message)
     Add-Content -Path $logFile -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - $message"
 }
 
-Write-Log "Starting Intune Customization Script"
-
-# Function to install applications
 Function Install-App {
     param ([string]$appId)
     try {
@@ -78,13 +70,6 @@ Function Install-App {
     }
 }
 
-foreach ($app in $apps) {
-    Install-App -appId $app
-}
-
-Write-Log "Application installations complete."
-
-# Remove Bloatware
 Function Remove-Bloatware {
     foreach ($app in $removeApps) {
         try {
@@ -96,6 +81,78 @@ Function Remove-Bloatware {
     }
 }
 
+Function Refresh-BGInfo {
+    try {
+        $bgInfoExecutable = "C:\Program Files\BGInfo\BGInfo.exe"
+        $bgInfoConfig = "C:\Digacore\BGInfo\BGInfoConfig.bgi"
+        Start-Process -FilePath $bgInfoExecutable -ArgumentList "$bgInfoConfig /timer:0"
+        Write-Log "BGInfo refreshed successfully."
+    } catch {
+        Write-Log "Failed to refresh BGInfo: ${_}"
+    }
+}
+
+Function Refresh-Wallpaper {
+    $regPath = "HKCU:\Control Panel\Desktop"
+    if (Test-Path $backgroundImage) {
+        Set-ItemProperty -Path $regPath -Name Wallpaper -Value $backgroundImage
+        Set-ItemProperty -Path $regPath -Name WallpaperStyle -Value 2 # Stretch mode
+        Set-ItemProperty -Path $regPath -Name TileWallpaper -Value 0
+        rundll32.exe user32.dll, UpdatePerUserSystemParameters
+        Write-Log "Wallpaper refreshed successfully."
+    } else {
+        Write-Log "Wallpaper file not found: $backgroundImage"
+    }
+}
+
+Function Rename-PC {
+    param ([string]$siteCode)
+
+    $SerialNumber = (Get-WmiObject -Class Win32_BIOS).SerialNumber
+    $SystemInfo = Get-WmiObject -Class Win32_ComputerSystem
+    $Model = $SystemInfo.PCSystemType
+    $IsVM = $SystemInfo.Model -match "Virtual|VMware|Hyper-V"
+
+    if ($IsVM) {
+        $pcType = "VM"
+    } elseif ($Model -eq 2) {
+        $pcType = "LT"
+    } elseif ($Model -eq 3) {
+        $pcType = "WS"
+    } elseif ($Model -eq 4) {
+        $pcType = "KS"
+    } else {
+        $pcType = "PC"
+    }
+
+    $NewPCName = "$siteCode-$pcType-$SerialNumber"
+
+    if ($env:COMPUTERNAME -ne $NewPCName) {
+        Write-Log "Renaming computer to $NewPCName..."
+        Rename-Computer -NewName $NewPCName -Force
+        Restart-Computer -Force
+    } else {
+        Write-Log "Computer name is already compliant. No changes needed."
+    }
+}
+
+# Main Execution
+
+# Ensure the log directory exists
+if (-not (Test-Path -Path $logFile)) {
+    New-Item -ItemType File -Path $logFile -Force | Out-Null
+}
+
+Write-Log "Starting Intune Customization Script"
+
+# Install applications
+foreach ($app in $apps) {
+    Install-App -appId $app
+}
+
+Write-Log "Application installations complete."
+
+# Remove bloatware
 Remove-Bloatware
 Write-Log "Bloatware removal complete."
 
@@ -134,67 +191,10 @@ try {
 }
 
 # Refresh BGInfo
-Function Refresh-BGInfo {
-    try {
-        $bgInfoExecutable = "C:\Program Files\BGInfo\BGInfo.exe"
-        $bgInfoConfig = "C:\Digacore\BGInfo\BGInfoConfig.bgi"
-        Start-Process -FilePath $bgInfoExecutable -ArgumentList "$bgInfoConfig /timer:0"
-        Write-Log "BGInfo refreshed successfully."
-    } catch {
-        Write-Log "Failed to refresh BGInfo: ${_}"
-    }
-}
-
 Refresh-BGInfo
 
-# Set wallpaper for the current user
-Function Refresh-Wallpaper {
-    $regPath = "HKCU:\Control Panel\Desktop"
-
-    if (Test-Path $backgroundImage) {
-        Set-ItemProperty -Path $regPath -Name Wallpaper -Value $backgroundImage
-        Set-ItemProperty -Path $regPath -Name WallpaperStyle -Value 2 # Stretch mode
-        Set-ItemProperty -Path $regPath -Name TileWallpaper -Value 0
-        rundll32.exe user32.dll, UpdatePerUserSystemParameters
-        Write-Log "Wallpaper refreshed successfully."
-    } else {
-        Write-Log "Wallpaper file not found: $backgroundImage"
-    }
-}
-
+# Refresh wallpaper
 Refresh-Wallpaper
-
-# Rename PC Script
-Function Rename-PC {
-    param ([string]$siteCode)
-
-    $SerialNumber = (Get-WmiObject -Class Win32_BIOS).SerialNumber
-    $SystemInfo = Get-WmiObject -Class Win32_ComputerSystem
-    $Model = $SystemInfo.PCSystemType
-    $IsVM = $SystemInfo.Model -match "Virtual|VMware|Hyper-V"
-
-    if ($IsVM) {
-        $pcType = "VM"
-    } elseif ($Model -eq 2) {
-        $pcType = "LT"
-    } elseif ($Model -eq 3) {
-        $pcType = "WS"
-    } elseif ($Model -eq 4) {
-        $pcType = "KS"
-    } else {
-        $pcType = "PC"
-    }
-
-    $NewPCName = "$siteCode-$pcType-$SerialNumber"
-
-    if ($env:COMPUTERNAME -ne $NewPCName) {
-        Write-Host "Renaming computer to $NewPCName..."
-        Rename-Computer -NewName $NewPCName -Force
-        Restart-Computer -Force
-    } else {
-        Write-Host "Computer name is already compliant. No changes needed."
-    }
-}
 
 # Get site code from user
 $siteCode = Read-Host -Prompt "Enter the 4-letter Site Code (ALL CAPS)"
