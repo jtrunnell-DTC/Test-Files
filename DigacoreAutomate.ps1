@@ -53,7 +53,7 @@ $removeApps = @(
     "Microsoft.YourPhone",
     "Microsoft.ZuneMusic",
     "Microsoft.ZuneVideo"
-)S
+)
 
 # Ensure the log directory exists
 if (-not (Test-Path -Path $logFile)) {
