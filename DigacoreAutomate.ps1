@@ -16,7 +16,6 @@ $apps = @(
     "Mozilla.Firefox",
     "Microsoft.PowerShell",
     "Microsoft.OneDrive"
-
 )
 
 # List of apps to remove (decrapify Windows)
@@ -87,12 +86,12 @@ Write-Log "Application installations complete."
 
 # Remove Bloatware
 Function Remove-Bloatware {
-    foreach ($app in $bloatware) {
+    foreach ($app in $removeApps) {
         try {
             Get-AppxPackage -Name $app | Remove-AppxPackage
             Write-Log "Removed $app successfully."
         } catch {
-            Write-Log "Failed to remove $app: $_"
+            Write-Log "Failed to remove ${app}: $_"
         }
     }
 }
