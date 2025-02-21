@@ -91,7 +91,7 @@ Function Remove-Bloatware {
             Get-AppxPackage -Name $app | Remove-AppxPackage
             Write-Log "Removed $app successfully."
         } catch {
-            Write-Log "Failed to remove ${app}: $_"
+            Write-Log "Failed to remove ${app}: ${_}"
         }
     }
 }
