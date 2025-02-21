@@ -1,3 +1,5 @@
+Start-Sleep -Seconds 120
+
 # Define Variables
 
 $logFile = "C:\Digacore\script-log.txt"
